@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone } from 'lucide-react';
+import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone, FileEdit } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -16,7 +16,8 @@ import {
   DropdownMenuSub,
   DropdownMenuSubTrigger,
   DropdownMenuSubContent,
-  DropdownMenuLabel
+  DropdownMenuLabel,
+  DropdownMenuPortal
 } from "@/components/ui/dropdown-menu";
 import { WebWeaverLogo } from '@/components/icons/logo';
 import { Separator } from '@/components/ui/separator';
@@ -45,6 +46,7 @@ interface ControlPanelProps {
   onSaveProject: () => void;
   onLoadProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
+  onRenameProject: (id: string) => void;
   currentProjectId: string | null;
   canCreateCheckpoint: boolean;
   onSaveAsCheckpoint: () => void;
@@ -65,6 +67,7 @@ export function ControlPanel({
   onSaveProject,
   onLoadProject,
   onDeleteProject,
+  onRenameProject,
   currentProjectId,
   canCreateCheckpoint,
   onSaveAsCheckpoint,
@@ -94,45 +97,56 @@ export function ControlPanel({
                   <FolderArchive className="h-5 w-5" />
                 </Button>
               </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuLabel>Project</DropdownMenuLabel>
-                <DropdownMenuItem onSelect={onSaveProject} disabled={!hasCode && !prompt}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Save Project {currentProjectName ? `(${currentProjectName})` : ''}
-                </DropdownMenuItem>
-                <DropdownMenuSub>
-                  <DropdownMenuSubTrigger>
-                    <FolderOpen className="mr-2 h-4 w-4" />
-                    Load Project/Checkpoint
-                  </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
-                    {projects.length === 0 && <DropdownMenuItem disabled>No saved items</DropdownMenuItem>}
-                    {projects.sort((a,b) => b.id.localeCompare(a.id)).map((p) => (
-                      <DropdownMenuItem key={p.id} className="flex justify-between items-center" onSelect={(e) => { e.preventDefault(); onLoadProject(p.id); }}>
-                        <span>{p.name}</span>
-                        <Button 
-                          variant="ghost" 
-                          size="icon" 
-                          className="h-6 w-6 ml-2 opacity-50 hover:opacity-100" 
-                          onClick={(e) => { e.stopPropagation(); onDeleteProject(p.id);}}
-                          aria-label={`Delete project ${p.name}`}
-                        >
-                          <Trash2 className="h-3 w-3 text-destructive" />
-                        </Button>
-                      </DropdownMenuItem>
-                    ))}
-                  </DropdownMenuSubContent>
-                </DropdownMenuSub>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={onDownloadProjectZip} disabled={!hasCode || isLoading}>
-                  <Download className="mr-2 h-4 w-4" />
-                  Download Project as ZIP
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                 <DropdownMenuItem onSelect={onClearCode} disabled={!hasCode && !prompt}>
-                  <Trash2 className="mr-2 h-4 w-4" /> Clear Current Code
-                </DropdownMenuItem>
-              </DropdownMenuContent>
+              <DropdownMenuPortal>
+                <DropdownMenuContent align="end">
+                  <DropdownMenuLabel>Project</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={onSaveProject} disabled={!hasCode && !prompt}>
+                    <Save className="mr-2 h-4 w-4" />
+                    Save Project {currentProjectName ? `(${currentProjectName})` : ''}
+                  </DropdownMenuItem>
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>
+                      <FolderOpen className="mr-2 h-4 w-4" />
+                      Manage Items
+                    </DropdownMenuSubTrigger>
+                    <DropdownMenuPortal>
+                      <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+                        <DropdownMenuLabel>Load, Rename, or Delete</DropdownMenuLabel>
+                        <DropdownMenuSeparator />
+                        {projects.length === 0 && <DropdownMenuItem disabled>No saved items</DropdownMenuItem>}
+                        {projects.sort((a,b) => b.id.localeCompare(a.id)).map((p) => (
+                          <DropdownMenuSub key={p.id}>
+                            <DropdownMenuSubTrigger>{p.name}</DropdownMenuSubTrigger>
+                            <DropdownMenuPortal>
+                              <DropdownMenuSubContent>
+                                <DropdownMenuItem onSelect={() => onLoadProject(p.id)}>
+                                  <FolderOpen className="mr-2 h-4 w-4" /> Load
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onSelect={() => onRenameProject(p.id)}>
+                                  <FileEdit className="mr-2 h-4 w-4" /> Rename
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem onSelect={() => onDeleteProject(p.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                  <Trash2 className="mr-2 h-4 w-4" /> Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuSubContent>
+                            </DropdownMenuPortal>
+                          </DropdownMenuSub>
+                        ))}
+                      </DropdownMenuSubContent>
+                    </DropdownMenuPortal>
+                  </DropdownMenuSub>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={onDownloadProjectZip} disabled={!hasCode || isLoading}>
+                    <Download className="mr-2 h-4 w-4" />
+                    Download Project as ZIP
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onSelect={onClearCode} disabled={!hasCode && !prompt} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                    <Trash2 className="mr-2 h-4 w-4" /> Clear Current Code
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenuPortal>
             </DropdownMenu>
           </div>
         </div>

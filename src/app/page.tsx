@@ -59,7 +59,6 @@ export default function WebWeaverPage() {
   }, [htmlCode, cssCode, jsCode]);
 
   useEffect(() => {
-    // If prompt changes, the current AI output is no longer directly related to the new prompt for checkpointing
     if (canCreateCheckpoint) {
       setCanCreateCheckpoint(false);
     }
@@ -186,7 +185,10 @@ If a section is not present or not modified, include the delimiters with the ori
   const togglePreview = () => setIsPreviewVisible(prev => !prev);
 
   const handleSaveProject = () => {
-    const projectName = window.prompt("Enter a name for your project:");
+    const currentProjectObject = currentProjectId ? projects.find(p => p.id === currentProjectId) : null;
+    const defaultName = currentProjectObject ? currentProjectObject.name : "";
+    const projectName = window.prompt("Enter a name for your project:", defaultName);
+
     if (projectName && projectName.trim() !== "") {
       const newProject: Project = {
         id: currentProjectId || Date.now().toString(),
@@ -194,7 +196,7 @@ If a section is not present or not modified, include the delimiters with the ori
         html: htmlCode,
         css: cssCode,
         js: jsCode,
-        prompt: prompt, // Save the current prompt with the project
+        prompt: prompt, 
       };
 
       let updatedProjects;
@@ -219,14 +221,14 @@ If a section is not present or not modified, include the delimiters with the ori
         console.error("Error saving project to localStorage:", error);
         toast({ title: "Error Saving Project", description: "Could not save the project to your browser.", variant: "destructive" });
       }
-      setCanCreateCheckpoint(false); // Saving a project "finalizes" the current state for checkpointing
+      setCanCreateCheckpoint(false); 
     } else if (projectName !== null) { 
         toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
     }
   };
 
   const handleSaveAsCheckpoint = () => {
-    const currentProjectNameBase = currentProjectId ? projects.find(p => p.id === currentProjectId)?.name : 'Untitled';
+    const currentProjectNameBase = currentProjectId ? projects.find(p => p.id === currentProjectId)?.name : 'Untitled Project';
     const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
     const defaultCheckpointName = `${currentProjectNameBase} - Checkpoint ${timestamp}`;
     
@@ -234,12 +236,12 @@ If a section is not present or not modified, include the delimiters with the ori
 
     if (checkpointName && checkpointName.trim() !== "") {
       const newCheckpoint: Project = {
-        id: Date.now().toString(), // Ensure unique ID
+        id: Date.now().toString(), 
         name: checkpointName.trim(),
         html: htmlCode,
         css: cssCode,
         js: jsCode,
-        prompt: lastSuccessfulPrompt, // Save the prompt that led to this checkpoint state
+        prompt: lastSuccessfulPrompt, 
       };
 
       const updatedProjects = [...projects, newCheckpoint];
@@ -251,12 +253,11 @@ If a section is not present or not modified, include the delimiters with the ori
         console.error("Error saving checkpoint to localStorage:", error);
         toast({ title: "Error Saving Checkpoint", description: "Could not save the checkpoint.", variant: "destructive" });
       }
-      setCanCreateCheckpoint(false); // Checkpoint created
+      setCanCreateCheckpoint(false); 
     } else if (checkpointName !== null) {
       toast({ title: "Invalid Name", description: "Checkpoint name cannot be empty.", variant: "destructive" });
     }
   };
-
 
   const handleLoadProject = (projectId: string) => {
     const projectToLoad = projects.find(p => p.id === projectId);
@@ -266,22 +267,24 @@ If a section is not present or not modified, include the delimiters with the ori
       setJsCode(projectToLoad.js);
       setPrompt(projectToLoad.prompt);
       setCurrentProjectId(projectToLoad.id);
-      setCanCreateCheckpoint(false); // Loading a project means the current view isn't a direct AI output yet
-      setLastSuccessfulPrompt(projectToLoad.prompt); // Or maybe clear this? For now, set to loaded prompt.
+      setCanCreateCheckpoint(false); 
+      setLastSuccessfulPrompt(projectToLoad.prompt); 
       toast({ title: "Project Loaded", description: `"${projectToLoad.name}" has been loaded.` });
     }
   };
   
   const handleDeleteProject = (projectId: string) => {
-    if (window.confirm("Are you sure you want to delete this project/checkpoint? This action cannot be undone.")) {
+    const projectToDelete = projects.find(p => p.id === projectId);
+    if (!projectToDelete) return;
+
+    if (window.confirm(`Are you sure you want to delete "${projectToDelete.name}"? This action cannot be undone.`)) {
       const updatedProjects = projects.filter(p => p.id !== projectId);
       setProjects(updatedProjects);
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
-        toast({ title: "Project Deleted" });
+        toast({ title: "Project Deleted", description: `"${projectToDelete.name}" has been deleted.` });
         if (currentProjectId === projectId) {
-           // If the deleted project was the current one, clear the editor
-          handleClearCode(); // This also sets currentProjectId to null and resets checkpoint state
+          handleClearCode(); 
         }
       } catch (error) {
         console.error("Error deleting project from localStorage:", error);
@@ -290,6 +293,27 @@ If a section is not present or not modified, include the delimiters with the ori
     }
   };
 
+  const handleRenameProject = (projectId: string) => {
+    const projectToRename = projects.find(p => p.id === projectId);
+    if (!projectToRename) return;
+
+    const newName = window.prompt("Enter the new name for this item:", projectToRename.name);
+    if (newName && newName.trim() !== "") {
+      const updatedProjects = projects.map(p => 
+        p.id === projectId ? { ...p, name: newName.trim() } : p
+      );
+      setProjects(updatedProjects);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
+        toast({ title: "Item Renamed", description: `"${projectToRename.name}" renamed to "${newName.trim()}".` });
+      } catch (error) {
+        console.error("Error renaming project in localStorage:", error);
+        toast({ title: "Error Renaming Item", variant: "destructive" });
+      }
+    } else if (newName !== null) {
+      toast({ title: "Invalid Name", description: "Name cannot be empty.", variant: "destructive" });
+    }
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col p-2 sm:p-4 bg-muted/30">
@@ -310,6 +334,7 @@ If a section is not present or not modified, include the delimiters with the ori
             onSaveProject={handleSaveProject}
             onLoadProject={handleLoadProject}
             onDeleteProject={handleDeleteProject}
+            onRenameProject={handleRenameProject}
             currentProjectId={currentProjectId}
             canCreateCheckpoint={canCreateCheckpoint}
             onSaveAsCheckpoint={handleSaveAsCheckpoint}
