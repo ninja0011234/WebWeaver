@@ -12,14 +12,49 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Button } from '@/components/ui/button';
 import { Code2, Eye } from 'lucide-react';
 
-interface PreviewWindowProps {
-  html: string;
-  css: string;
-  js: string;
-  isVisible: boolean;
+interface CodeEditorProps {
+  value: string;
+  onChange: (value: string) => void;
+  placeholder: string;
+  disabled: boolean;
+  id: string;
+  label: string;
 }
 
-export function PreviewWindow({ html, css, js, isVisible }: PreviewWindowProps) {
+const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, placeholder, disabled, id, label }) => (
+  <ScrollArea className="h-full w-full rounded-md border bg-muted/20">
+    <Textarea
+      id={id}
+      aria-label={label}
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      placeholder={placeholder}
+      className="font-code text-sm h-full w-full resize-none border-0 focus-visible:ring-0 focus-visible:ring-offset-0 p-4 whitespace-pre-wrap"
+      disabled={disabled}
+      rows={20} 
+      wrap="off"
+    />
+  </ScrollArea>
+);
+
+
+interface PreviewWindowProps {
+  html: string;
+  setHtml: (html: string) => void;
+  css: string;
+  setCss: (css: string) => void;
+  js: string;
+  setJs: (js: string) => void;
+  isVisible: boolean;
+  isLoading: boolean;
+}
+
+export function PreviewWindow({ 
+  html, setHtml, 
+  css, setCss, 
+  js, setJs, 
+  isVisible, isLoading 
+}: PreviewWindowProps) {
   const [srcDoc, setSrcDoc] = useState('');
   const [isCodeDialogOpen, setIsCodeDialogOpen] = useState(false);
 
@@ -49,13 +84,13 @@ export function PreviewWindow({ html, css, js, isVisible }: PreviewWindowProps) 
             <CardTitle className="text-lg font-headline">Live Preview</CardTitle>
             <Dialog open={isCodeDialogOpen} onOpenChange={setIsCodeDialogOpen}>
               <DialogTrigger asChild>
-                <Button variant="ghost" size="icon" aria-label="Show Code" disabled={!html && !css && !js}>
+                <Button variant="ghost" size="icon" aria-label="Show and Edit Code" disabled={(!html && !css && !js) && !isLoading /* Allow opening to edit empty if not loading */}>
                   <Code2 className="h-5 w-5" />
                 </Button>
               </DialogTrigger>
               <DialogContent className="max-w-3xl h-[80vh] flex flex-col p-4 sm:p-6">
                 <DialogHeader className="pb-2">
-                  <DialogTitle>Current Code</DialogTitle>
+                  <DialogTitle>Edit Code</DialogTitle>
                 </DialogHeader>
                 <Tabs defaultValue="html" className="flex-grow flex flex-col min-h-0">
                   <TabsList className="grid w-full grid-cols-3">
@@ -64,19 +99,34 @@ export function PreviewWindow({ html, css, js, isVisible }: PreviewWindowProps) 
                     <TabsTrigger value="js">JavaScript</TabsTrigger>
                   </TabsList>
                   <TabsContent value="html" className="flex-grow mt-2 h-0">
-                    <ScrollArea className="h-full w-full rounded-md border bg-muted/20">
-                      <Textarea value={html} readOnly className="font-code text-sm h-full w-full resize-none border-0 focus-visible:ring-0 p-4 whitespace-pre-wrap" wrap="off"/>
-                    </ScrollArea>
+                    <CodeEditor
+                      id="html-editor-dialog"
+                      label="HTML Code Editor"
+                      value={html}
+                      onChange={setHtml}
+                      placeholder="Enter HTML code here..."
+                      disabled={isLoading}
+                    />
                   </TabsContent>
                   <TabsContent value="css" className="flex-grow mt-2 h-0">
-                     <ScrollArea className="h-full w-full rounded-md border bg-muted/20">
-                      <Textarea value={css} readOnly className="font-code text-sm h-full w-full resize-none border-0 focus-visible:ring-0 p-4 whitespace-pre-wrap" wrap="off"/>
-                    </ScrollArea>
+                     <CodeEditor
+                      id="css-editor-dialog"
+                      label="CSS Code Editor"
+                      value={css}
+                      onChange={setCss}
+                      placeholder="Enter CSS code here..."
+                      disabled={isLoading}
+                    />
                   </TabsContent>
                   <TabsContent value="js" className="flex-grow mt-2 h-0">
-                     <ScrollArea className="h-full w-full rounded-md border bg-muted/20">
-                      <Textarea value={js} readOnly className="font-code text-sm h-full w-full resize-none border-0 focus-visible:ring-0 p-4 whitespace-pre-wrap" wrap="off"/>
-                    </ScrollArea>
+                     <CodeEditor
+                      id="js-editor-dialog"
+                      label="JavaScript Code Editor"
+                      value={js}
+                      onChange={setJs}
+                      placeholder="Enter JavaScript code here..."
+                      disabled={isLoading}
+                    />
                   </TabsContent>
                 </Tabs>
               </DialogContent>
@@ -94,7 +144,9 @@ export function PreviewWindow({ html, css, js, isVisible }: PreviewWindowProps) 
             ) : (
               <div className="w-full h-full flex items-center justify-center border border-border rounded-md bg-muted/30">
                 <p className="text-muted-foreground text-center p-4">
-                  Generate or edit code to see a live preview here.
+                  Generate code to see a live preview here.
+                  <br />
+                  Use the <Code2 className="inline h-4 w-4 align-text-bottom" /> icon above to open the editor.
                   <br />
                   Use the <Eye className="inline h-4 w-4 align-text-bottom" /> icon in Controls to toggle this panel.
                 </p>

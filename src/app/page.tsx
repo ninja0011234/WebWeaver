@@ -9,7 +9,6 @@ import {
   ResizablePanelGroup,
 } from "@/components/ui/resizable";
 import { ControlPanel } from '@/components/web-weaver/control-panel';
-import { CodeView } from '@/components/web-weaver/code-view';
 import { PreviewWindow } from '@/components/web-weaver/preview-window';
 import { useToast } from "@/hooks/use-toast";
 import { generateCodeFromPrompt } from '@/ai/flows/generate-code-from-prompt';
@@ -75,7 +74,7 @@ export default function WebWeaverPage() {
       return;
     }
     setIsLoading(true);
-    setCurrentProjectId(null); // New generation means it's a new potential project
+    setCurrentProjectId(null); 
     try {
       const result = await generateCodeFromPrompt({ prompt });
       setHtmlCode(result.html);
@@ -179,10 +178,8 @@ If a section is not present or not modified, include the delimiters with the ori
 
       let updatedProjects;
       if (currentProjectId && projects.find(p => p.id === currentProjectId)) {
-        // Update existing project if currentProjectId matches an existing one
          updatedProjects = projects.map(p => p.id === currentProjectId ? newProject : p);
       } else {
-        // Add as new project or update if ID collision (though unlikely with Date.now())
         const existingProjectIndex = projects.findIndex(p => p.id === newProject.id);
         if (existingProjectIndex > -1) {
           updatedProjects = [...projects];
@@ -201,7 +198,7 @@ If a section is not present or not modified, include the delimiters with the ori
         console.error("Error saving project to localStorage:", error);
         toast({ title: "Error Saving Project", description: "Could not save the project to your browser.", variant: "destructive" });
       }
-    } else if (projectName !== null) { // User clicked OK but entered empty name
+    } else if (projectName !== null) { 
         toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
     }
   };
@@ -226,7 +223,7 @@ If a section is not present or not modified, include the delimiters with the ori
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
         toast({ title: "Project Deleted" });
         if (currentProjectId === projectId) {
-          setCurrentProjectId(null); // If current project deleted, clear it
+          setCurrentProjectId(null); 
         }
       } catch (error) {
         console.error("Error deleting project from localStorage:", error);
@@ -239,46 +236,40 @@ If a section is not present or not modified, include the delimiters with the ori
   return (
     <div className="h-screen w-screen flex flex-col p-2 sm:p-4 bg-muted/30">
       <ResizablePanelGroup direction="horizontal" className="flex-grow rounded-lg border shadow-sm bg-background">
-        <ResizablePanel defaultSize={35} minSize={25} maxSize={50} className="p-1 sm:p-2">
-          <div className="h-full flex flex-col gap-2">
-            <div className="h-[40%] min-h-[200px]">
-              <ControlPanel
-                prompt={prompt}
-                setPrompt={setPrompt}
-                onGenerate={handleGenerateCode}
-                onEdit={handleEditCode}
-                onDownloadHtml={handleDownloadHtml}
-                onDownloadCss={handleDownloadCss}
-                onDownloadJs={handleDownloadJs}
-                onClearCode={handleClearCode}
-                isLoading={isLoading}
-                hasCode={hasCode}
-                isPreviewVisible={isPreviewVisible}
-                togglePreview={togglePreview}
-                projects={projects}
-                onSaveProject={handleSaveProject}
-                onLoadProject={handleLoadProject}
-                onDeleteProject={handleDeleteProject}
-                currentProjectId={currentProjectId}
-              />
-            </div>
-            <div className="flex-grow h-[60%] min-h-[250px]">
-              <CodeView
-                html={htmlCode}
-                setHtml={setHtmlCode}
-                css={cssCode}
-                setCss={setCssCode}
-                js={jsCode}
-                setJs={setJsCode}
-                isLoading={isLoading}
-              />
-            </div>
-          </div>
+        <ResizablePanel defaultSize={30} minSize={25} maxSize={45} className="p-1 sm:p-2">
+          <ControlPanel
+            prompt={prompt}
+            setPrompt={setPrompt}
+            onGenerate={handleGenerateCode}
+            onEdit={handleEditCode}
+            onDownloadHtml={handleDownloadHtml}
+            onDownloadCss={handleDownloadCss}
+            onDownloadJs={handleDownloadJs}
+            onClearCode={handleClearCode}
+            isLoading={isLoading}
+            hasCode={hasCode}
+            isPreviewVisible={isPreviewVisible}
+            togglePreview={togglePreview}
+            projects={projects}
+            onSaveProject={handleSaveProject}
+            onLoadProject={handleLoadProject}
+            onDeleteProject={handleDeleteProject}
+            currentProjectId={currentProjectId}
+          />
         </ResizablePanel>
         <ResizableHandle withHandle className={!isPreviewVisible ? "hidden" : ""} />
         {isPreviewVisible && (
-          <ResizablePanel defaultSize={65} minSize={30} className="p-1 sm:p-2">
-            <PreviewWindow html={htmlCode} css={cssCode} js={jsCode} isVisible={isPreviewVisible} />
+          <ResizablePanel defaultSize={70} minSize={30} className="p-1 sm:p-2">
+            <PreviewWindow
+              html={htmlCode}
+              setHtml={setHtmlCode}
+              css={cssCode}
+              setCss={setCssCode}
+              js={jsCode}
+              setJs={setJsCode}
+              isLoading={isLoading}
+              isVisible={isPreviewVisible}
+            />
           </ResizablePanel>
         )}
       </ResizablePanelGroup>
