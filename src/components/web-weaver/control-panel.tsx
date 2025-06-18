@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone, FileEdit, Copy } from 'lucide-react';
+import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone, FileEdit, Copy, FileUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -22,6 +22,8 @@ import {
 import { WebWeaverLogo } from '@/components/icons/logo';
 import { Separator } from '@/components/ui/separator';
 import type { Project } from '@/hooks/useProjects';
+import { useToast } from "@/hooks/use-toast";
+
 
 interface ControlPanelProps {
   prompt: string;
@@ -44,6 +46,9 @@ interface ControlPanelProps {
   currentProjectName?: string | null;
   canCreateCheckpoint: boolean;
   onSaveAsCheckpoint: () => void;
+  onHtmlFileUpload: (content: string) => void;
+  onCssFileUpload: (content: string) => void;
+  onJsFileUpload: (content: string) => void;
 }
 
 export function ControlPanel({
@@ -67,7 +72,12 @@ export function ControlPanel({
   currentProjectName,
   canCreateCheckpoint,
   onSaveAsCheckpoint,
+  onHtmlFileUpload,
+  onCssFileUpload,
+  onJsFileUpload,
 }: ControlPanelProps) {
+  const { toast } = useToast();
+
   const handlePrimaryAction = () => {
     if (hasCode) {
       onEdit();
@@ -81,6 +91,28 @@ export function ControlPanel({
     : "Save Project...";
 
   const canPerformSaveActions = (hasCode || prompt.trim() !== '');
+
+  const handleFileSelect = (
+    event: React.ChangeEvent<HTMLInputElement>,
+    fileType: 'HTML' | 'CSS' | 'JavaScript',
+    callback: (content: string) => void
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const text = e.target?.result as string;
+        callback(text);
+        toast({ title: `${fileType} File Uploaded`, description: `${file.name} loaded into ${fileType} editor.` });
+      };
+      reader.onerror = () => {
+        toast({ title: `Error Reading ${fileType} File`, description: `Could not read the selected ${fileType} file.`, variant: "destructive" });
+      };
+      reader.readAsText(file);
+      event.target.value = ''; // Reset file input to allow re-uploading the same file
+    }
+  };
+
 
   return (
     <Card className="h-full flex flex-col shadow-xl">
@@ -99,7 +131,18 @@ export function ControlPanel({
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
                 <DropdownMenuContent align="end" className="w-64">
-                  <DropdownMenuLabel>Project Actions</DropdownMenuLabel>
+                  <DropdownMenuLabel>File Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={() => document.getElementById('html-upload-input')?.click()} disabled={isLoading}>
+                    <FileUp className="mr-2 h-4 w-4" /> Upload HTML
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => document.getElementById('css-upload-input')?.click()} disabled={isLoading}>
+                    <FileUp className="mr-2 h-4 w-4" /> Upload CSS
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={() => document.getElementById('js-upload-input')?.click()} disabled={isLoading}>
+                    <FileUp className="mr-2 h-4 w-4" /> Upload JavaScript
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuLabel>Project Management</DropdownMenuLabel>
                   <DropdownMenuItem onSelect={onSaveOrUpdateProject} disabled={!canPerformSaveActions || isLoading}>
                     <Save className="mr-2 h-4 w-4" />
                     {saveButtonText}
@@ -165,6 +208,29 @@ export function ControlPanel({
         </div>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-3 overflow-y-auto p-4 pt-0">
+        {/* Hidden file inputs */}
+        <input
+          type="file"
+          id="html-upload-input"
+          accept=".html,.htm"
+          style={{ display: 'none' }}
+          onChange={(e) => handleFileSelect(e, 'HTML', onHtmlFileUpload)}
+        />
+        <input
+          type="file"
+          id="css-upload-input"
+          accept=".css"
+          style={{ display: 'none' }}
+          onChange={(e) => handleFileSelect(e, 'CSS', onCssFileUpload)}
+        />
+        <input
+          type="file"
+          id="js-upload-input"
+          accept=".js,.mjs"
+          style={{ display: 'none' }}
+          onChange={(e) => handleFileSelect(e, 'JavaScript', onJsFileUpload)}
+        />
+
         <div className="space-y-1.5">
           <Label htmlFor="prompt-input" className="text-sm font-medium">
             Describe your web application or desired changes:

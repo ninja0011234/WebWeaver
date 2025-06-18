@@ -203,6 +203,20 @@ If a section is not present or not modified, include the delimiters with the ori
     deleteProject(projectId, handleClearCode);
   };
 
+  const onRenameProjectHandler = (projectId: string) => {
+    renameProject(projectId);
+  };
+
+  const handleFileUpload = (content: string, type: 'html' | 'css' | 'js') => {
+    if (type === 'html') setHtmlCode(content);
+    if (type === 'css') setCssCode(content);
+    if (type === 'js') setJsCode(content);
+
+    setPrompt(''); 
+    clearCurrentProjectSelection();
+    setCanCreateCheckpoint(false);
+    setLastSuccessfulPrompt('');
+  };
 
   return (
     <div className="h-screen w-screen flex flex-col p-2 sm:p-4 bg-muted/30">
@@ -229,11 +243,14 @@ If a section is not present or not modified, include the delimiters with the ori
             onSaveProjectAsCopy={onSaveProjectAsCopyHandler}
             onLoadProject={(id) => loadProject(id, handleSetCodeStates)}
             onDeleteProject={onDeleteProjectHandler}
-            onRenameProject={renameProject}
+            onRenameProject={onRenameProjectHandler}
             currentProjectId={currentProjectId}
             currentProjectName={currentProject?.name}
             canCreateCheckpoint={canCreateCheckpoint}
             onSaveAsCheckpoint={onSaveCheckpointHandler}
+            onHtmlFileUpload={(content) => handleFileUpload(content, 'html')}
+            onCssFileUpload={(content) => handleFileUpload(content, 'css')}
+            onJsFileUpload={(content) => handleFileUpload(content, 'js')}
           />
         </ResizablePanel>
         <ResizableHandle withHandle className={!isPreviewVisible ? "hidden" : ""} />
