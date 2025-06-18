@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, MoreVertical } from 'lucide-react';
+import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,16 +35,14 @@ interface ControlPanelProps {
   setPrompt: (prompt: string) => void;
   onGenerate: () => void;
   onEdit: () => void;
-  onDownloadHtml: () => void;
-  onDownloadCss: () => void;
-  onDownloadJs: () => void;
+  onDownloadProjectZip: () => void;
   onClearCode: () => void;
   isLoading: boolean;
   hasCode: boolean;
   isPreviewVisible: boolean;
   togglePreview: () => void;
   projects: Project[];
-  onSaveProject: () => void; // Simplified: page.tsx handles prompt for name
+  onSaveProject: () => void;
   onLoadProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
   currentProjectId: string | null;
@@ -55,9 +53,7 @@ export function ControlPanel({
   setPrompt,
   onGenerate,
   onEdit,
-  onDownloadHtml,
-  onDownloadCss,
-  onDownloadJs,
+  onDownloadProjectZip,
   onClearCode,
   isLoading,
   hasCode,
@@ -124,6 +120,11 @@ export function ControlPanel({
                   </DropdownMenuSubContent>
                 </DropdownMenuSub>
                 <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={onDownloadProjectZip} disabled={!hasCode || isLoading}>
+                  <Download className="mr-2 h-4 w-4" />
+                  Download Project as ZIP
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
                  <DropdownMenuItem onSelect={onClearCode} disabled={!hasCode && !prompt}>
                   <Trash2 className="mr-2 h-4 w-4" /> Clear Current Code
                 </DropdownMenuItem>
@@ -154,26 +155,6 @@ export function ControlPanel({
           {isLoading ? <Loader2 className="animate-spin" /> : (hasCode ? <Edit3 /> : <Wand2 />)}
           {hasCode ? 'Edit Code' : 'Generate Code'}
         </Button>
-        
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={!hasCode || isLoading} className="w-full">
-              <Download className="mr-2 h-4 w-4" />
-              Download Files
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="start" className="w-[--radix-dropdown-menu-trigger-width)]">
-            <DropdownMenuItem onClick={onDownloadHtml} disabled={!hasCode}>
-              HTML File
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDownloadCss} disabled={!hasCode}>
-              CSS File
-            </DropdownMenuItem>
-            <DropdownMenuItem onClick={onDownloadJs} disabled={!hasCode}>
-              JavaScript File
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
         
         {isLoading && (
           <div className="flex items-center justify-center text-sm text-muted-foreground pt-1">

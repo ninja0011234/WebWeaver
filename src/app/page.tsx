@@ -13,7 +13,7 @@ import { PreviewWindow } from '@/components/web-weaver/preview-window';
 import { useToast } from "@/hooks/use-toast";
 import { generateCodeFromPrompt } from '@/ai/flows/generate-code-from-prompt';
 import { editCodeWithPrompt } from '@/ai/flows/edit-code-with-prompt';
-import { downloadFile } from '@/lib/download';
+import { downloadProjectAsZip } from '@/lib/download';
 
 const LOCAL_STORAGE_KEY = 'webWeaverProjects_v1';
 
@@ -149,9 +149,11 @@ If a section is not present or not modified, include the delimiters with the ori
     setIsLoading(false);
   };
 
-  const handleDownloadHtml = () => downloadFile('index.html', htmlCode, 'text/html');
-  const handleDownloadCss = () => downloadFile('style.css', cssCode, 'text/css');
-  const handleDownloadJs = () => downloadFile('script.js', jsCode, 'text/javascript');
+  const handleDownloadProjectZip = () => {
+    const currentProject = projects.find(p => p.id === currentProjectId);
+    const projectName = currentProject?.name || 'web-weaver-export';
+    downloadProjectAsZip(htmlCode, cssCode, jsCode, projectName);
+  };
 
   const handleClearCode = () => {
     setHtmlCode('');
@@ -224,6 +226,7 @@ If a section is not present or not modified, include the delimiters with the ori
         toast({ title: "Project Deleted" });
         if (currentProjectId === projectId) {
           setCurrentProjectId(null); 
+          handleClearCode();
         }
       } catch (error) {
         console.error("Error deleting project from localStorage:", error);
@@ -242,9 +245,7 @@ If a section is not present or not modified, include the delimiters with the ori
             setPrompt={setPrompt}
             onGenerate={handleGenerateCode}
             onEdit={handleEditCode}
-            onDownloadHtml={handleDownloadHtml}
-            onDownloadCss={handleDownloadCss}
-            onDownloadJs={handleDownloadJs}
+            onDownloadProjectZip={handleDownloadProjectZip}
             onClearCode={handleClearCode}
             isLoading={isLoading}
             hasCode={hasCode}
