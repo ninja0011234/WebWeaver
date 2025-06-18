@@ -2,7 +2,7 @@
 "use client";
 
 import type * as React from 'react';
-import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive } from 'lucide-react';
+import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -46,6 +46,8 @@ interface ControlPanelProps {
   onLoadProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
   currentProjectId: string | null;
+  canCreateCheckpoint: boolean;
+  onSaveAsCheckpoint: () => void;
 }
 
 export function ControlPanel({
@@ -64,6 +66,8 @@ export function ControlPanel({
   onLoadProject,
   onDeleteProject,
   currentProjectId,
+  canCreateCheckpoint,
+  onSaveAsCheckpoint,
 }: ControlPanelProps) {
   const handlePrimaryAction = () => {
     if (hasCode) {
@@ -99,11 +103,11 @@ export function ControlPanel({
                 <DropdownMenuSub>
                   <DropdownMenuSubTrigger>
                     <FolderOpen className="mr-2 h-4 w-4" />
-                    Load Project
+                    Load Project/Checkpoint
                   </DropdownMenuSubTrigger>
-                  <DropdownMenuSubContent>
-                    {projects.length === 0 && <DropdownMenuItem disabled>No saved projects</DropdownMenuItem>}
-                    {projects.map((p) => (
+                  <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+                    {projects.length === 0 && <DropdownMenuItem disabled>No saved items</DropdownMenuItem>}
+                    {projects.sort((a,b) => b.id.localeCompare(a.id)).map((p) => (
                       <DropdownMenuItem key={p.id} className="flex justify-between items-center" onSelect={(e) => { e.preventDefault(); onLoadProject(p.id); }}>
                         <span>{p.name}</span>
                         <Button 
@@ -151,10 +155,16 @@ export function ControlPanel({
           />
         </div>
 
-        <Button onClick={handlePrimaryAction} disabled={isLoading || !prompt} className="w-full">
+        <Button onClick={handlePrimaryAction} disabled={isLoading || !prompt.trim()} className="w-full">
           {isLoading ? <Loader2 className="animate-spin" /> : (hasCode ? <Edit3 /> : <Wand2 />)}
           {hasCode ? 'Edit Code' : 'Generate Code'}
         </Button>
+
+        {canCreateCheckpoint && !isLoading && (
+          <Button onClick={onSaveAsCheckpoint} variant="outline" className="w-full">
+            <Milestone className="mr-2 h-4 w-4" /> Save Checkpoint
+          </Button>
+        )}
         
         {isLoading && (
           <div className="flex items-center justify-center text-sm text-muted-foreground pt-1">

@@ -35,8 +35,10 @@ export default function WebWeaverPage() {
   const [hasCode, setHasCode] = useState<boolean>(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState<boolean>(true);
   const [currentProjectId, setCurrentProjectId] = useState<string | null>(null);
-
   const [projects, setProjects] = useState<Project[]>([]);
+  const [canCreateCheckpoint, setCanCreateCheckpoint] = useState<boolean>(false);
+  const [lastSuccessfulPrompt, setLastSuccessfulPrompt] = useState<string>('');
+
 
   const { toast } = useToast();
 
@@ -55,6 +57,15 @@ export default function WebWeaverPage() {
   useEffect(() => {
     setHasCode(htmlCode.trim() !== '' || cssCode.trim() !== '' || jsCode.trim() !== '');
   }, [htmlCode, cssCode, jsCode]);
+
+  useEffect(() => {
+    // If prompt changes, the current AI output is no longer directly related to the new prompt for checkpointing
+    if (canCreateCheckpoint) {
+      setCanCreateCheckpoint(false);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [prompt]);
+
 
   const parseModifiedCode = (modifiedCode: string): { html: string; css: string; js: string } => {
     const htmlMatch = modifiedCode.match(/<!-- HTML_CODE_START -->([\s\S]*?)<!-- HTML_CODE_END -->/);
@@ -75,12 +86,15 @@ export default function WebWeaverPage() {
     }
     setIsLoading(true);
     setCurrentProjectId(null); 
+    setCanCreateCheckpoint(false);
     try {
       const result = await generateCodeFromPrompt({ prompt });
       setHtmlCode(result.html);
       setCssCode(result.css);
       setJsCode(result.javascript);
-      toast({ title: "Code Generated", description: "AI has woven your web!" });
+      setLastSuccessfulPrompt(prompt);
+      setCanCreateCheckpoint(true);
+      toast({ title: "Code Generated", description: "AI has woven your web! You can now save this as a checkpoint." });
     } catch (error) {
       console.error("Error generating code:", error);
       toast({ title: "Error Generating Code", description: (error as Error).message || "An unexpected error occurred.", variant: "destructive" });
@@ -98,6 +112,7 @@ export default function WebWeaverPage() {
       return;
     }
     setIsLoading(true);
+    setCanCreateCheckpoint(false);
     const existingCode = `
 <!-- HTML_CODE_START -->
 ${htmlCode}
@@ -139,7 +154,9 @@ If a section is not present or not modified, include the delimiters with the ori
         setHtmlCode(newHtml);
         setCssCode(newCss);
         setJsCode(newJs);
-        toast({ title: "Code Edited", description: "AI has rewoven your web!" });
+        setLastSuccessfulPrompt(prompt);
+        setCanCreateCheckpoint(true);
+        toast({ title: "Code Edited", description: "AI has rewoven your web! You can now save this as a checkpoint." });
       }
 
     } catch (error) {
@@ -161,6 +178,8 @@ If a section is not present or not modified, include the delimiters with the ori
     setJsCode('');
     setPrompt('');
     setCurrentProjectId(null);
+    setCanCreateCheckpoint(false);
+    setLastSuccessfulPrompt('');
     toast({ title: "Code Cleared", description: "All code has been cleared." });
   };
   
@@ -175,7 +194,7 @@ If a section is not present or not modified, include the delimiters with the ori
         html: htmlCode,
         css: cssCode,
         js: jsCode,
-        prompt: prompt,
+        prompt: prompt, // Save the current prompt with the project
       };
 
       let updatedProjects;
@@ -200,10 +219,44 @@ If a section is not present or not modified, include the delimiters with the ori
         console.error("Error saving project to localStorage:", error);
         toast({ title: "Error Saving Project", description: "Could not save the project to your browser.", variant: "destructive" });
       }
+      setCanCreateCheckpoint(false); // Saving a project "finalizes" the current state for checkpointing
     } else if (projectName !== null) { 
         toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
     }
   };
+
+  const handleSaveAsCheckpoint = () => {
+    const currentProjectNameBase = currentProjectId ? projects.find(p => p.id === currentProjectId)?.name : 'Untitled';
+    const timestamp = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    const defaultCheckpointName = `${currentProjectNameBase} - Checkpoint ${timestamp}`;
+    
+    const checkpointName = window.prompt("Enter a name for this checkpoint:", defaultCheckpointName);
+
+    if (checkpointName && checkpointName.trim() !== "") {
+      const newCheckpoint: Project = {
+        id: Date.now().toString(), // Ensure unique ID
+        name: checkpointName.trim(),
+        html: htmlCode,
+        css: cssCode,
+        js: jsCode,
+        prompt: lastSuccessfulPrompt, // Save the prompt that led to this checkpoint state
+      };
+
+      const updatedProjects = [...projects, newCheckpoint];
+      setProjects(updatedProjects);
+      try {
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
+        toast({ title: "Checkpoint Saved", description: `"${newCheckpoint.name}" has been saved.` });
+      } catch (error) {
+        console.error("Error saving checkpoint to localStorage:", error);
+        toast({ title: "Error Saving Checkpoint", description: "Could not save the checkpoint.", variant: "destructive" });
+      }
+      setCanCreateCheckpoint(false); // Checkpoint created
+    } else if (checkpointName !== null) {
+      toast({ title: "Invalid Name", description: "Checkpoint name cannot be empty.", variant: "destructive" });
+    }
+  };
+
 
   const handleLoadProject = (projectId: string) => {
     const projectToLoad = projects.find(p => p.id === projectId);
@@ -213,20 +266,22 @@ If a section is not present or not modified, include the delimiters with the ori
       setJsCode(projectToLoad.js);
       setPrompt(projectToLoad.prompt);
       setCurrentProjectId(projectToLoad.id);
+      setCanCreateCheckpoint(false); // Loading a project means the current view isn't a direct AI output yet
+      setLastSuccessfulPrompt(projectToLoad.prompt); // Or maybe clear this? For now, set to loaded prompt.
       toast({ title: "Project Loaded", description: `"${projectToLoad.name}" has been loaded.` });
     }
   };
   
   const handleDeleteProject = (projectId: string) => {
-    if (window.confirm("Are you sure you want to delete this project? This action cannot be undone.")) {
+    if (window.confirm("Are you sure you want to delete this project/checkpoint? This action cannot be undone.")) {
       const updatedProjects = projects.filter(p => p.id !== projectId);
       setProjects(updatedProjects);
       try {
         localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(updatedProjects));
         toast({ title: "Project Deleted" });
         if (currentProjectId === projectId) {
-          setCurrentProjectId(null); 
-          handleClearCode();
+           // If the deleted project was the current one, clear the editor
+          handleClearCode(); // This also sets currentProjectId to null and resets checkpoint state
         }
       } catch (error) {
         console.error("Error deleting project from localStorage:", error);
@@ -256,6 +311,8 @@ If a section is not present or not modified, include the delimiters with the ori
             onLoadProject={handleLoadProject}
             onDeleteProject={handleDeleteProject}
             currentProjectId={currentProjectId}
+            canCreateCheckpoint={canCreateCheckpoint}
+            onSaveAsCheckpoint={handleSaveAsCheckpoint}
           />
         </ResizablePanel>
         <ResizableHandle withHandle className={!isPreviewVisible ? "hidden" : ""} />
