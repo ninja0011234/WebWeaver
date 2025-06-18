@@ -15,6 +15,13 @@ export interface Project {
   prompt: string;
 }
 
+interface CodeBundle {
+  html: string;
+  css: string;
+  js: string;
+  prompt: string;
+}
+
 interface UseProjectsReturn {
   projects: Project[];
   currentProjectId: string | null;
@@ -22,14 +29,9 @@ interface UseProjectsReturn {
   canCreateCheckpoint: boolean;
   lastSuccessfulPrompt: string;
   loadProject: (projectId: string, setCodeStates: (html: string, css: string, js: string, prompt: string) => void) => void;
-  saveProject: (
-    currentCode: { html: string; css: string; js: string; prompt: string },
-    promptForName?: boolean
-  ) => void;
-  saveCheckpoint: (
-    currentCode: { html: string; css: string; js: string },
-    currentPromptForCheckpoint: string
-  ) => void;
+  saveOrUpdateProject: (currentCode: CodeBundle) => void;
+  saveProjectAsCopy: (currentCode: CodeBundle) => void;
+  saveCheckpoint: (currentCode: { html: string; css: string; js: string }, currentPromptForCheckpoint: string) => void;
   deleteProject: (projectId: string, onDeletionCallback?: () => void) => void;
   renameProject: (projectId: string) => void;
   setCanCreateCheckpoint: (value: boolean) => void;
@@ -71,36 +73,16 @@ export function useProjects(): UseProjectsReturn {
     if (projectToLoad) {
       setCodeStates(projectToLoad.html, projectToLoad.css, projectToLoad.js, projectToLoad.prompt);
       setCurrentProjectId(projectToLoad.id);
-      setCanCreateCheckpoint(false);
-      setLastSuccessfulPrompt(projectToLoad.prompt);
+      setCanCreateCheckpoint(false); // Cannot make checkpoint immediately after load
+      setLastSuccessfulPrompt(projectToLoad.prompt); // For checkpoint consistency
       toast({ title: "Project Loaded", description: `"${projectToLoad.name}" has been loaded.` });
     }
   }, [projects, toast]);
 
-  const saveProject = useCallback((
-    currentCode: { html: string; css: string; js: string; prompt: string },
-    promptForName: boolean = true
-  ) => {
-    const currentProjectObject = currentProjectId ? projects.find(p => p.id === currentProjectId) : null;
-    let projectName = currentProjectObject?.name;
-
-    if (promptForName || !currentProjectObject) {
-        const newName = window.prompt("Enter a name for your project:", projectName || "");
-        if (newName === null) return; // User cancelled
-        if (newName.trim() === "") {
-            toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
-            return;
-        }
-        projectName = newName.trim();
-    }
-    
-    if (!projectName) { // Should not happen if promptForName is true and user provides a name
-      projectName = `Project ${Date.now()}`;
-    }
-
+  const _performSave = (currentCode: CodeBundle, idToUse: string, nameToUse: string, isNew: boolean): Project | null => {
     const newProjectData: Project = {
-      id: currentProjectId || Date.now().toString(),
-      name: projectName,
+      id: idToUse,
+      name: nameToUse,
       html: currentCode.html,
       css: currentCode.css,
       js: currentCode.js,
@@ -108,19 +90,56 @@ export function useProjects(): UseProjectsReturn {
     };
 
     let updatedProjects;
-    const existingProjectIndex = projects.findIndex(p => p.id === newProjectData.id);
-
-    if (existingProjectIndex > -1) {
-      updatedProjects = projects.map(p => (p.id === newProjectData.id ? newProjectData : p));
-    } else {
+    if (isNew) {
       updatedProjects = [...projects, newProjectData];
+    } else {
+      updatedProjects = projects.map(p => (p.id === idToUse ? newProjectData : p));
     }
 
     setProjects(updatedProjects);
     saveProjectsToLocalStorage(updatedProjects);
     setCurrentProjectId(newProjectData.id);
-    setCanCreateCheckpoint(false);
-    toast({ title: "Project Saved", description: `"${newProjectData.name}" has been saved.` });
+    setCanCreateCheckpoint(false); // Saved, so no immediate checkpoint from *previous* AI op
+    return newProjectData;
+  };
+  
+  const saveOrUpdateProject = useCallback((currentCode: CodeBundle) => {
+    const currentProjectObject = currentProjectId ? projects.find(p => p.id === currentProjectId) : null;
+
+    if (currentProjectObject) { // Update existing project
+      const savedProject = _performSave(currentCode, currentProjectObject.id, currentProjectObject.name, false);
+      if (savedProject) {
+        toast({ title: "Project Updated", description: `"${savedProject.name}" has been updated.` });
+      }
+    } else { // Save as new project because no current project is active
+      const newName = window.prompt("Enter a name for your new project:", "Untitled Project");
+      if (newName && newName.trim() !== "") {
+        const newId = Date.now().toString();
+        const savedProject = _performSave(currentCode, newId, newName.trim(), true);
+        if (savedProject) {
+          toast({ title: "Project Saved", description: `"${savedProject.name}" has been saved.` });
+        }
+      } else if (newName !== null) { // User entered empty name
+        toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
+      }
+    }
+  }, [currentProjectId, projects, saveProjectsToLocalStorage, toast]);
+
+
+  const saveProjectAsCopy = useCallback((currentCode: CodeBundle) => {
+    const currentProjectObject = currentProjectId ? projects.find(p => p.id === currentProjectId) : null;
+    const suggestedName = currentProjectObject ? `Copy of ${currentProjectObject.name}` : "Untitled Project";
+    
+    const newName = window.prompt("Enter a name for the new project copy:", suggestedName);
+    if (newName && newName.trim() !== "") {
+      const newId = Date.now().toString();
+      const savedProject = _performSave(currentCode, newId, newName.trim(), true);
+      if (savedProject) {
+         toast({ title: "Project Saved As Copy", description: `"${savedProject.name}" has been created.` });
+      }
+    } else if (newName !== null) {
+      toast({ title: "Invalid Name", description: "Project name cannot be empty.", variant: "destructive" });
+    }
   }, [currentProjectId, projects, saveProjectsToLocalStorage, toast]);
 
 
@@ -141,14 +160,14 @@ export function useProjects(): UseProjectsReturn {
         html: currentCode.html,
         css: currentCode.css,
         js: currentCode.js,
-        prompt: currentPromptForCheckpoint,
+        prompt: currentPromptForCheckpoint, 
       };
 
       const updatedProjects = [...projects, newCheckpoint];
       setProjects(updatedProjects);
       saveProjectsToLocalStorage(updatedProjects);
       toast({ title: "Checkpoint Saved", description: `"${newCheckpoint.name}" has been saved.` });
-      setCanCreateCheckpoint(false);
+      setCanCreateCheckpoint(false); 
     } else if (checkpointName !== null) {
       toast({ title: "Invalid Name", description: "Checkpoint name cannot be empty.", variant: "destructive" });
     }
@@ -200,7 +219,8 @@ export function useProjects(): UseProjectsReturn {
     canCreateCheckpoint,
     lastSuccessfulPrompt,
     loadProject,
-    saveProject,
+    saveOrUpdateProject,
+    saveProjectAsCopy,
     saveCheckpoint,
     deleteProject,
     renameProject,

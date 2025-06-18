@@ -14,7 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import { generateCodeFromPrompt } from '@/ai/flows/generate-code-from-prompt';
 import { editCodeWithPrompt } from '@/ai/flows/edit-code-with-prompt';
 import { downloadProjectAsZip } from '@/lib/download';
-import { useProjects, type Project } from '@/hooks/useProjects';
+import { useProjects } from '@/hooks/useProjects';
 
 export default function WebWeaverPage() {
   const [prompt, setPrompt] = useState<string>('');
@@ -33,7 +33,8 @@ export default function WebWeaverPage() {
     canCreateCheckpoint,
     lastSuccessfulPrompt,
     loadProject,
-    saveProject,
+    saveOrUpdateProject,
+    saveProjectAsCopy,
     saveCheckpoint,
     deleteProject,
     renameProject,
@@ -49,11 +50,9 @@ export default function WebWeaverPage() {
 
   useEffect(() => {
     if (canCreateCheckpoint) {
-      // If prompt changes after a checkpoint was made available, invalidate checkpoint creation
-      // unless a new successful AI op happens.
       const currentCodeMatchesLastCheckpointBasis = 
-        currentProject?.prompt === lastSuccessfulPrompt || // Loaded project matches
-        prompt === lastSuccessfulPrompt; // Current input prompt matches what generated the code
+        currentProject?.prompt === lastSuccessfulPrompt || 
+        prompt === lastSuccessfulPrompt; 
 
       if (!currentCodeMatchesLastCheckpointBasis) {
          // setCanCreateCheckpoint(false); // This was causing premature disabling.
@@ -188,8 +187,12 @@ If a section is not present or not modified, include the delimiters with the ori
   
   const togglePreview = () => setIsPreviewVisible(prev => !prev);
 
-  const onSaveProjectHandler = () => {
-    saveProject({ html: htmlCode, css: cssCode, js: jsCode, prompt: prompt });
+  const onSaveOrUpdateProjectHandler = () => {
+    saveOrUpdateProject({ html: htmlCode, css: cssCode, js: jsCode, prompt: prompt });
+  };
+
+  const onSaveProjectAsCopyHandler = () => {
+    saveProjectAsCopy({ html: htmlCode, css: cssCode, js: jsCode, prompt: prompt });
   };
   
   const onSaveCheckpointHandler = () => {
@@ -209,7 +212,6 @@ If a section is not present or not modified, include the delimiters with the ori
             prompt={prompt}
             setPrompt={(newPrompt) => {
               setPrompt(newPrompt);
-              // If prompt is manually changed after AI op, can't make checkpoint on old AI op
               if (newPrompt !== lastSuccessfulPrompt) {
                 setCanCreateCheckpoint(false);
               }
@@ -223,7 +225,8 @@ If a section is not present or not modified, include the delimiters with the ori
             isPreviewVisible={isPreviewVisible}
             togglePreview={togglePreview}
             projects={projects}
-            onSaveProject={onSaveProjectHandler}
+            onSaveOrUpdateProject={onSaveOrUpdateProjectHandler}
+            onSaveProjectAsCopy={onSaveProjectAsCopyHandler}
             onLoadProject={(id) => loadProject(id, handleSetCodeStates)}
             onDeleteProject={onDeleteProjectHandler}
             onRenameProject={renameProject}

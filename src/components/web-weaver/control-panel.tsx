@@ -2,10 +2,10 @@
 "use client";
 
 import type * as React from 'react';
-import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone, FileEdit } from 'lucide-react';
+import { Wand2, Edit3, Download, Loader2, Trash2, Eye, EyeOff, Save, FolderOpen, FolderArchive, Milestone, FileEdit, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import {
   DropdownMenu,
@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WebWeaverLogo } from '@/components/icons/logo';
 import { Separator } from '@/components/ui/separator';
-import type { Project } from '@/hooks/useProjects'; // Import Project type
+import type { Project } from '@/hooks/useProjects';
 
 interface ControlPanelProps {
   prompt: string;
@@ -35,12 +35,13 @@ interface ControlPanelProps {
   isPreviewVisible: boolean;
   togglePreview: () => void;
   projects: Project[];
-  onSaveProject: () => void;
+  onSaveOrUpdateProject: () => void;
+  onSaveProjectAsCopy: () => void;
   onLoadProject: (id: string) => void;
   onDeleteProject: (id: string) => void;
   onRenameProject: (id: string) => void;
   currentProjectId: string | null;
-  currentProjectName?: string | null; // Added for displaying current project name
+  currentProjectName?: string | null;
   canCreateCheckpoint: boolean;
   onSaveAsCheckpoint: () => void;
 }
@@ -57,7 +58,8 @@ export function ControlPanel({
   isPreviewVisible,
   togglePreview,
   projects,
-  onSaveProject,
+  onSaveOrUpdateProject,
+  onSaveProjectAsCopy,
   onLoadProject,
   onDeleteProject,
   onRenameProject,
@@ -73,6 +75,12 @@ export function ControlPanel({
       onGenerate();
     }
   };
+
+  const saveButtonText = currentProjectId && currentProjectName 
+    ? `Save '${currentProjectName}'` 
+    : "Save Project...";
+
+  const canPerformSaveActions = (hasCode || prompt.trim() !== '');
 
   return (
     <Card className="h-full flex flex-col shadow-xl">
@@ -92,9 +100,13 @@ export function ControlPanel({
               <DropdownMenuPortal>
                 <DropdownMenuContent align="end" className="w-64">
                   <DropdownMenuLabel>Project Actions</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={onSaveProject} disabled={(!hasCode && !prompt) || isLoading}>
+                  <DropdownMenuItem onSelect={onSaveOrUpdateProject} disabled={!canPerformSaveActions || isLoading}>
                     <Save className="mr-2 h-4 w-4" />
-                    Save {currentProjectName ? `"${currentProjectName}"` : 'Project'}
+                    {saveButtonText}
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onSelect={onSaveProjectAsCopy} disabled={!canPerformSaveActions || isLoading}>
+                    <Copy className="mr-2 h-4 w-4" />
+                    Save As New Project...
                   </DropdownMenuItem>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
@@ -143,7 +155,14 @@ export function ControlPanel({
           </div>
         </div>
         <Separator className="my-2" />
-        <CardTitle className="text-lg font-headline">Controls</CardTitle>
+        <div className="flex justify-between items-center">
+          <CardTitle className="text-lg font-headline">Controls</CardTitle>
+          {currentProjectName && (
+            <CardDescription className="text-xs text-muted-foreground truncate max-w-[150px]">
+              Editing: {currentProjectName}
+            </CardDescription>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="flex-grow flex flex-col gap-3 overflow-y-auto p-4 pt-0">
         <div className="space-y-1.5">
