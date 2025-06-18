@@ -21,15 +21,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { WebWeaverLogo } from '@/components/icons/logo';
 import { Separator } from '@/components/ui/separator';
-
-interface Project {
-  id: string;
-  name: string;
-  html: string;
-  css: string;
-  js: string;
-  prompt: string;
-}
+import type { Project } from '@/hooks/useProjects'; // Import Project type
 
 interface ControlPanelProps {
   prompt: string;
@@ -48,6 +40,7 @@ interface ControlPanelProps {
   onDeleteProject: (id: string) => void;
   onRenameProject: (id: string) => void;
   currentProjectId: string | null;
+  currentProjectName?: string | null; // Added for displaying current project name
   canCreateCheckpoint: boolean;
   onSaveAsCheckpoint: () => void;
 }
@@ -69,6 +62,7 @@ export function ControlPanel({
   onDeleteProject,
   onRenameProject,
   currentProjectId,
+  currentProjectName,
   canCreateCheckpoint,
   onSaveAsCheckpoint,
 }: ControlPanelProps) {
@@ -79,8 +73,6 @@ export function ControlPanel({
       onGenerate();
     }
   };
-
-  const currentProjectName = projects.find(p => p.id === currentProjectId)?.name;
 
   return (
     <Card className="h-full flex flex-col shadow-xl">
@@ -98,11 +90,11 @@ export function ControlPanel({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuPortal>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Project</DropdownMenuLabel>
-                  <DropdownMenuItem onSelect={onSaveProject} disabled={!hasCode && !prompt}>
+                <DropdownMenuContent align="end" className="w-64">
+                  <DropdownMenuLabel>Project Actions</DropdownMenuLabel>
+                  <DropdownMenuItem onSelect={onSaveProject} disabled={(!hasCode && !prompt) || isLoading}>
                     <Save className="mr-2 h-4 w-4" />
-                    Save Project {currentProjectName ? `(${currentProjectName})` : ''}
+                    Save {currentProjectName ? `"${currentProjectName}"` : 'Project'}
                   </DropdownMenuItem>
                   <DropdownMenuSub>
                     <DropdownMenuSubTrigger>
@@ -110,7 +102,7 @@ export function ControlPanel({
                       Manage Items
                     </DropdownMenuSubTrigger>
                     <DropdownMenuPortal>
-                      <DropdownMenuSubContent className="max-h-72 overflow-y-auto">
+                      <DropdownMenuSubContent className="max-h-72 overflow-y-auto w-60">
                         <DropdownMenuLabel>Load, Rename, or Delete</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         {projects.length === 0 && <DropdownMenuItem disabled>No saved items</DropdownMenuItem>}
@@ -119,14 +111,14 @@ export function ControlPanel({
                             <DropdownMenuSubTrigger>{p.name}</DropdownMenuSubTrigger>
                             <DropdownMenuPortal>
                               <DropdownMenuSubContent>
-                                <DropdownMenuItem onSelect={() => onLoadProject(p.id)}>
+                                <DropdownMenuItem onSelect={() => onLoadProject(p.id)} disabled={isLoading}>
                                   <FolderOpen className="mr-2 h-4 w-4" /> Load
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onSelect={() => onRenameProject(p.id)}>
+                                <DropdownMenuItem onSelect={() => onRenameProject(p.id)} disabled={isLoading}>
                                   <FileEdit className="mr-2 h-4 w-4" /> Rename
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
-                                <DropdownMenuItem onSelect={() => onDeleteProject(p.id)} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                                <DropdownMenuItem onSelect={() => onDeleteProject(p.id)} disabled={isLoading} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                                   <Trash2 className="mr-2 h-4 w-4" /> Delete
                                 </DropdownMenuItem>
                               </DropdownMenuSubContent>
@@ -142,7 +134,7 @@ export function ControlPanel({
                     Download Project as ZIP
                   </DropdownMenuItem>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onSelect={onClearCode} disabled={!hasCode && !prompt} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
+                  <DropdownMenuItem onSelect={onClearCode} disabled={(!hasCode && !prompt) || isLoading} className="text-destructive focus:text-destructive-foreground focus:bg-destructive">
                     <Trash2 className="mr-2 h-4 w-4" /> Clear Current Code
                   </DropdownMenuItem>
                 </DropdownMenuContent>
