@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -44,6 +45,14 @@ export function ControlPanel({
   isPreviewVisible,
   togglePreview,
 }: ControlPanelProps) {
+  const handlePrimaryAction = () => {
+    if (hasCode) {
+      onEdit();
+    } else {
+      onGenerate();
+    }
+  };
+
   return (
     <Card className="h-full flex flex-col shadow-xl">
       <CardHeader className="pb-4">
@@ -72,14 +81,10 @@ export function ControlPanel({
           />
         </div>
 
-        <div className="grid grid-cols-2 gap-2">
-          <Button onClick={onGenerate} disabled={isLoading || !prompt} className="w-full">
-            {isLoading ? <Loader2 className="animate-spin" /> : <Wand2 />}
-            Generate
-          </Button>
-          <Button onClick={onEdit} disabled={isLoading || !prompt || !hasCode} variant="outline" className="w-full">
-            {isLoading ? <Loader2 className="animate-spin" /> : <Edit3 />}
-            Edit
+        <div className="grid grid-cols-1 gap-2"> {/* Changed to 1 column for the primary action button */}
+          <Button onClick={handlePrimaryAction} disabled={isLoading || !prompt} className="w-full">
+            {isLoading ? <Loader2 className="animate-spin" /> : (hasCode ? <Edit3 /> : <Wand2 />)}
+            {hasCode ? 'Edit Code' : 'Generate Code'}
           </Button>
         </div>
         
@@ -88,7 +93,7 @@ export function ControlPanel({
             <DropdownMenuTrigger asChild>
               <Button variant="outline" disabled={!hasCode || isLoading} className="w-full">
                 <Download />
-                Download Code
+                Download
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="start">
@@ -104,7 +109,7 @@ export function ControlPanel({
             </DropdownMenuContent>
           </DropdownMenu>
           <Button onClick={onClearCode} variant="destructive" disabled={!hasCode || isLoading} className="w-full">
-             <Trash2 /> Clear Code
+             <Trash2 /> Clear All
           </Button>
         </div>
         
