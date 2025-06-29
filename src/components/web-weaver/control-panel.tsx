@@ -78,14 +78,6 @@ export function ControlPanel({
 }: ControlPanelProps) {
   const { toast } = useToast();
 
-  const handlePrimaryAction = () => {
-    if (hasCode) {
-      onEdit();
-    } else {
-      onGenerate();
-    }
-  };
-
   const saveButtonText = currentProjectId && currentProjectName 
     ? `Save '${currentProjectName}'` 
     : "Save Project...";
@@ -246,7 +238,7 @@ export function ControlPanel({
           />
         </div>
 
-        <Button onClick={handlePrimaryAction} disabled={isLoading || !prompt.trim()} className="w-full">
+        <Button onClick={hasCode ? onEdit : onGenerate} disabled={isLoading || !prompt.trim()} className="w-full">
           {isLoading ? <Loader2 className="animate-spin" /> : (hasCode ? <Edit3 /> : <Wand2 />)}
           {hasCode ? 'Edit Code' : 'Generate Code'}
         </Button>
