@@ -74,11 +74,11 @@ export default function WebWeaverPage() {
     };
   };
 
-  const handleSetCodeStates = (html: string, css: string, js: string, newPrompt: string) => {
+  const handleSetCodeStates = (html: string, css: string, js: string, prompt: string) => {
     setHtmlCode(html);
     setCssCode(css);
     setJsCode(js);
-    setPrompt(newPrompt);
+    setPrompt(prompt);
   };
 
   const handleGenerateCode = async () => {
@@ -203,8 +203,8 @@ If a section is not present or not modified, include the delimiters with the ori
     deleteProject(projectId, handleClearCode);
   };
 
-  const onRenameProjectHandler = (projectId: string) => {
-    renameProject(projectId);
+  const onRenameProjectHandler = (projectId: string, newName: string) => {
+    renameProject(projectId, newName);
   };
 
   const handleFileUpload = (content: string, type: 'html' | 'css' | 'js') => {

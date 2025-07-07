@@ -33,7 +33,7 @@ interface UseProjectsReturn {
   saveProjectAsCopy: (currentCode: CodeBundle) => void;
   saveCheckpoint: (currentCode: { html: string; css: string; js: string }, currentPromptForCheckpoint: string) => void;
   deleteProject: (projectId: string, onDeletionCallback?: () => void) => void;
-  renameProject: (projectId: string) => void;
+  renameProject: (projectId: string, newName: string) => void;
   setCanCreateCheckpoint: (value: boolean) => void;
   setLastSuccessfulPrompt: (prompt: string) => void;
   clearCurrentProjectSelection: () => void;
@@ -177,23 +177,21 @@ export function useProjects(): UseProjectsReturn {
     const projectToDelete = projects.find(p => p.id === projectId);
     if (!projectToDelete) return;
 
-    if (window.confirm(`Are you sure you want to delete "${projectToDelete.name}"? This action cannot be undone.`)) {
-      const updatedProjects = projects.filter(p => p.id !== projectId);
-      setProjects(updatedProjects);
-      saveProjectsToLocalStorage(updatedProjects);
-      toast({ title: "Item Deleted", description: `"${projectToDelete.name}" has been deleted.` });
-      if (currentProjectId === projectId) {
-        setCurrentProjectId(null);
-        if (onDeletionCallback) onDeletionCallback();
-      }
+    const updatedProjects = projects.filter(p => p.id !== projectId);
+    setProjects(updatedProjects);
+    saveProjectsToLocalStorage(updatedProjects);
+    toast({ title: "Item Deleted", description: `"${projectToDelete.name}" has been deleted.` });
+    
+    if (currentProjectId === projectId) {
+      setCurrentProjectId(null);
+      if (onDeletionCallback) onDeletionCallback();
     }
   }, [projects, currentProjectId, saveProjectsToLocalStorage, toast]);
 
-  const renameProject = useCallback((projectId: string) => {
+  const renameProject = useCallback((projectId: string, newName: string) => {
     const projectToRename = projects.find(p => p.id === projectId);
     if (!projectToRename) return;
 
-    const newName = window.prompt("Enter the new name for this item:", projectToRename.name);
     if (newName && newName.trim() !== "") {
       const updatedProjects = projects.map(p =>
         p.id === projectId ? { ...p, name: newName.trim() } : p
@@ -201,7 +199,7 @@ export function useProjects(): UseProjectsReturn {
       setProjects(updatedProjects);
       saveProjectsToLocalStorage(updatedProjects);
       toast({ title: "Item Renamed", description: `"${projectToRename.name}" renamed to "${newName.trim()}".` });
-    } else if (newName !== null) {
+    } else {
       toast({ title: "Invalid Name", description: "Name cannot be empty.", variant: "destructive" });
     }
   }, [projects, saveProjectsToLocalStorage, toast]);
