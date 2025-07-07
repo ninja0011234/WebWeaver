@@ -1,10 +1,9 @@
-// src/ai/flows/edit-code-with-prompt.ts
 'use server';
 /**
  * @fileOverview Edits an existing React component and its CSS based on a text prompt.
  *
  * - editCodeWithPrompt - A function that takes existing code and a prompt, and returns modified code.
- * - EditCodeWithPromptInput - The input type for the editCodeWithPrompt function.
+ * - EditCodeWithPromptInput - The input type for the editCodeWithprompt function.
  * - EditCodeWithPromptOutput - The return type for the editCodeWithPrompt function.
  */
 
@@ -43,7 +42,8 @@ Existing CSS:
 Instructions:
 {{{prompt}}}
 
-Return the complete, modified code for both the React component and the CSS, even if one of them is unchanged.`,
+Return the complete, modified code for both the React component and the CSS, even if one of them is unchanged. The main component must be a functional component named 'App'. Do not include 'import React from "react";' or 'ReactDOM.render'. The output should only be the component code itself.
+`,
 });
 
 const editCodeWithPromptFlow = ai.defineFlow(
@@ -52,7 +52,7 @@ const editCodeWithPromptFlow = ai.defineFlow(
     inputSchema: EditCodeWithPromptInputSchema,
     outputSchema: EditCodeWithPromptOutputSchema,
   },
-  async input => {
+  async (input) => {
     const {output} = await prompt(input);
     return output!;
   }

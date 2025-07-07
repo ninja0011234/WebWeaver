@@ -1,4 +1,3 @@
-// src/ai/flows/generate-code-from-prompt.ts
 'use server';
 /**
  * @fileOverview Generates a React component and CSS code from a text prompt.
@@ -22,7 +21,9 @@ const GenerateCodeFromPromptOutputSchema = z.object({
 });
 export type GenerateCodeFromPromptOutput = z.infer<typeof GenerateCodeFromPromptOutputSchema>;
 
-export async function generateCodeFromPrompt(input: GenerateCodeFromPromptInput): Promise<GenerateCodeFromPromptOutput> {
+export async function generateCodeFromPrompt(
+  input: GenerateCodeFromPromptInput
+): Promise<GenerateCodeFromPromptOutput> {
   return generateCodeFromPromptFlow(input);
 }
 
@@ -45,7 +46,7 @@ const generateCodeFromPromptFlow = ai.defineFlow(
     inputSchema: GenerateCodeFromPromptInputSchema,
     outputSchema: GenerateCodeFromPromptOutputSchema,
   },
-  async input => {
+  async (input) => {
     const {output} = await prompt(input);
     return output!;
   }
