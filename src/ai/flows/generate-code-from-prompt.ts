@@ -1,7 +1,7 @@
 // src/ai/flows/generate-code-from-prompt.ts
 'use server';
 /**
- * @fileOverview Generates HTML, CSS, and JavaScript code from a text prompt.
+ * @fileOverview Generates a React component and CSS code from a text prompt.
  *
  * - generateCodeFromPrompt - A function that generates code from a prompt.
  * - GenerateCodeFromPromptInput - The input type for the generateCodeFromPrompt function.
@@ -12,14 +12,13 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GenerateCodeFromPromptInputSchema = z.object({
-  prompt: z.string().describe('A text prompt describing the web application.'),
+  prompt: z.string().describe('A text prompt describing the web application component.'),
 });
 export type GenerateCodeFromPromptInput = z.infer<typeof GenerateCodeFromPromptInputSchema>;
 
 const GenerateCodeFromPromptOutputSchema = z.object({
-  html: z.string().describe('The generated HTML code.'),
-  css: z.string().describe('The generated CSS code.'),
-  javascript: z.string().describe('The generated JavaScript code.'),
+  reactComponent: z.string().describe('The generated React component code (JSX). The main component must be named `App`. Do not include `import React from "react";`.'),
+  css: z.string().describe('The generated CSS code for the component.'),
 });
 export type GenerateCodeFromPromptOutput = z.infer<typeof GenerateCodeFromPromptOutputSchema>;
 
@@ -31,9 +30,11 @@ const prompt = ai.definePrompt({
   name: 'generateCodeFromPromptPrompt',
   input: {schema: GenerateCodeFromPromptInputSchema},
   output: {schema: GenerateCodeFromPromptOutputSchema},
-  prompt: `You are an expert web developer who can generate HTML, CSS, and JavaScript code based on a text prompt.
+  prompt: `You are an expert React developer who can generate a single React functional component and CSS based on a text prompt.
 
-  Please provide the HTML, CSS, and JavaScript code as separate strings in the output.
+  - The main component must be a functional component named 'App' and should use React hooks.
+  - Do NOT include 'import React from "react";' or 'ReactDOM.render'. The output should only be the component code itself.
+  - Provide the React component code and the CSS code as separate strings in the output.
 
   Text Prompt: {{{prompt}}}`,
 });

@@ -13,15 +13,32 @@ export function downloadFile(filename: string, content: string, mimeType: string
 }
 
 export async function downloadProjectAsZip(
-  htmlContent: string,
+  reactContent: string,
   cssContent: string,
-  jsContent: string,
   projectName: string = 'web-weaver-export'
 ) {
   const zip = new JSZip();
+
+  const htmlContent = `<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>${projectName}</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel" src="App.js"></script>
+</body>
+</html>`;
+
   zip.file('index.html', htmlContent);
   zip.file('style.css', cssContent);
-  zip.file('script.js', jsContent);
+  zip.file('App.js', reactContent);
 
   try {
     const zipBlob = await zip.generateAsync({ type: 'blob' });

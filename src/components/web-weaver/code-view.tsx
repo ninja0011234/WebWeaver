@@ -1,3 +1,4 @@
+
 "use client";
 
 import type * as React from 'react';
@@ -7,12 +8,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 
 interface CodeViewProps {
-  html: string;
-  setHtml: (html: string) => void;
+  reactCode: string;
+  setReactCode: (reactCode: string) => void;
   css: string;
   setCss: (css: string) => void;
-  js: string;
-  setJs: (js: string) => void;
   isLoading: boolean;
 }
 
@@ -38,25 +37,24 @@ const CodeEditor: React.FC<{
 );
 
 
-export function CodeView({ html, setHtml, css, setCss, js, setJs, isLoading }: CodeViewProps) {
+export function CodeView({ reactCode, setReactCode, css, setCss, isLoading }: CodeViewProps) {
   return (
     <Card className="h-full flex flex-col shadow-xl">
       <CardHeader className="pb-2">
         <CardTitle className="text-lg font-headline">Code Editor</CardTitle>
       </CardHeader>
       <CardContent className="flex-grow p-4 pt-0">
-        <Tabs defaultValue="html" className="h-full flex flex-col">
-          <TabsList className="grid w-full grid-cols-3 mb-2">
-            <TabsTrigger value="html" aria-label="HTML Code Tab">HTML</TabsTrigger>
+        <Tabs defaultValue="react" className="h-full flex flex-col">
+          <TabsList className="grid w-full grid-cols-2 mb-2">
+            <TabsTrigger value="react" aria-label="React Code Tab">React</TabsTrigger>
             <TabsTrigger value="css" aria-label="CSS Code Tab">CSS</TabsTrigger>
-            <TabsTrigger value="js" aria-label="JavaScript Code Tab">JavaScript</TabsTrigger>
           </TabsList>
-          <TabsContent value="html" className="flex-grow h-0">
+          <TabsContent value="react" className="flex-grow h-0">
             <CodeEditor
-              id="html-editor"
-              value={html}
-              onChange={setHtml}
-              placeholder="HTML code will appear here..."
+              id="react-editor"
+              value={reactCode}
+              onChange={setReactCode}
+              placeholder="React component code will appear here..."
               disabled={isLoading}
             />
           </TabsContent>
@@ -66,15 +64,6 @@ export function CodeView({ html, setHtml, css, setCss, js, setJs, isLoading }: C
               value={css}
               onChange={setCss}
               placeholder="CSS code will appear here..."
-              disabled={isLoading}
-            />
-          </TabsContent>
-          <TabsContent value="js" className="flex-grow h-0">
-            <CodeEditor
-              id="js-editor"
-              value={js}
-              onChange={setJs}
-              placeholder="JavaScript code will appear here..."
               disabled={isLoading}
             />
           </TabsContent>

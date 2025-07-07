@@ -64,9 +64,8 @@ interface ControlPanelProps {
   currentProjectName?: string | null;
   canCreateCheckpoint: boolean;
   onSaveAsCheckpoint: () => void;
-  onHtmlFileUpload: (content: string) => void;
+  onReactFileUpload: (content: string) => void;
   onCssFileUpload: (content: string) => void;
-  onJsFileUpload: (content: string) => void;
 }
 
 export function ControlPanel({
@@ -90,9 +89,8 @@ export function ControlPanel({
   currentProjectName,
   canCreateCheckpoint,
   onSaveAsCheckpoint,
-  onHtmlFileUpload,
+  onReactFileUpload,
   onCssFileUpload,
-  onJsFileUpload,
 }: ControlPanelProps) {
   const { toast } = useToast();
   const [projectToRename, setProjectToRename] = React.useState<Project | null>(null);
@@ -107,7 +105,7 @@ export function ControlPanel({
 
   const handleFileSelect = (
     event: React.ChangeEvent<HTMLInputElement>,
-    fileType: 'HTML' | 'CSS' | 'JavaScript',
+    fileType: 'React' | 'CSS',
     callback: (content: string) => void
   ) => {
     const file = event.target.files?.[0];
@@ -166,14 +164,11 @@ export function ControlPanel({
                 <DropdownMenuPortal>
                   <DropdownMenuContent align="end" className="w-64">
                     <DropdownMenuLabel>File Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onSelect={() => document.getElementById('html-upload-input')?.click()} disabled={isLoading}>
-                      <FileUp className="mr-2 h-4 w-4" /> Upload HTML
+                    <DropdownMenuItem onSelect={() => document.getElementById('react-upload-input')?.click()} disabled={isLoading}>
+                      <FileUp className="mr-2 h-4 w-4" /> Upload React Component
                     </DropdownMenuItem>
                     <DropdownMenuItem onSelect={() => document.getElementById('css-upload-input')?.click()} disabled={isLoading}>
                       <FileUp className="mr-2 h-4 w-4" /> Upload CSS
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onSelect={() => document.getElementById('js-upload-input')?.click()} disabled={isLoading}>
-                      <FileUp className="mr-2 h-4 w-4" /> Upload JavaScript
                     </DropdownMenuItem>
                     <DropdownMenuSeparator />
                     <DropdownMenuLabel>Project Management</DropdownMenuLabel>
@@ -245,10 +240,10 @@ export function ControlPanel({
           {/* Hidden file inputs */}
           <input
             type="file"
-            id="html-upload-input"
-            accept=".html,.htm"
+            id="react-upload-input"
+            accept=".js,.jsx"
             style={{ display: 'none' }}
-            onChange={(e) => handleFileSelect(e, 'HTML', onHtmlFileUpload)}
+            onChange={(e) => handleFileSelect(e, 'React', onReactFileUpload)}
           />
           <input
             type="file"
@@ -257,21 +252,14 @@ export function ControlPanel({
             style={{ display: 'none' }}
             onChange={(e) => handleFileSelect(e, 'CSS', onCssFileUpload)}
           />
-          <input
-            type="file"
-            id="js-upload-input"
-            accept=".js,.mjs"
-            style={{ display: 'none' }}
-            onChange={(e) => handleFileSelect(e, 'JavaScript', onJsFileUpload)}
-          />
 
           <div className="space-y-1.5">
             <Label htmlFor="prompt-input" className="text-sm font-medium">
-              Describe your web application or desired changes:
+              Describe your React component or desired changes:
             </Label>
             <Textarea
               id="prompt-input"
-              placeholder="e.g., A simple to-do list app..."
+              placeholder="e.g., A simple to-do list app with a state for tasks..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
               rows={4}
@@ -282,7 +270,7 @@ export function ControlPanel({
 
           <Button onClick={hasCode ? onEdit : onGenerate} disabled={isLoading || !prompt.trim()} className="w-full">
             {isLoading ? <Loader2 className="animate-spin" /> : (hasCode ? <Edit3 /> : <Wand2 />)}
-            {hasCode ? 'Edit Code' : 'Generate Code'}
+            {hasCode ? 'Edit Component' : 'Generate Component'}
           </Button>
 
           {canCreateCheckpoint && !isLoading && (

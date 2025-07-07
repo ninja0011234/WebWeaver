@@ -42,20 +42,17 @@ const CodeEditor: React.FC<CodeEditorProps> = ({ value, onChange, placeholder, d
 
 
 interface PreviewWindowProps {
-  html: string;
-  setHtml: (html: string) => void;
-  css: string;
-  setCss: (css: string) => void;
-  js: string;
-  setJs: (js: string) => void;
+  reactCode: string;
+  setReactCode: (html: string) => void;
+  cssCode: string;
+  setCssCode: (css: string) => void;
   isVisible: boolean;
   isLoading: boolean;
 }
 
 export function PreviewWindow({ 
-  html, setHtml, 
-  css, setCss, 
-  js, setJs, 
+  reactCode, setReactCode, 
+  cssCode, setCssCode, 
   isVisible, isLoading 
 }: PreviewWindowProps) {
   const [srcDoc, setSrcDoc] = useState('');
@@ -68,18 +65,32 @@ export function PreviewWindow({
       setSrcDoc(`
         <html>
           <head>
-            <style>${css}</style>
+            <style>${cssCode}</style>
+            <script src="https://unpkg.com/react@18/umd/react.development.js" crossorigin></script>
+            <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js" crossorigin></script>
+            <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
           </head>
           <body>
-            ${html}
-            <script type="module">${js}</script>
+            <div id="root"></div>
+            <script type="text/babel">
+              try {
+                ${reactCode}
+                const container = document.getElementById('root');
+                const root = ReactDOM.createRoot(container);
+                root.render(React.createElement(App));
+              } catch (err) {
+                const container = document.getElementById('root');
+                container.innerHTML = '<div style="color: red; font-family: sans-serif; padding: 1rem;"><h3>Error rendering React component:</h3><pre>' + err.message + '</pre></div>';
+                console.error(err);
+              }
+            </script>
           </body>
         </html>
       `);
     }, 250); 
 
     return () => clearTimeout(timeout);
-  }, [html, css, js]);
+  }, [reactCode, cssCode]);
 
   return (
     <TooltipProvider>
@@ -93,7 +104,7 @@ export function PreviewWindow({
                 <Separator orientation="vertical" className="h-6" />
                 <Dialog open={isCodeDialogOpen} onOpenChange={setIsCodeDialogOpen}>
                   <DialogTrigger asChild>
-                    <Button variant="ghost" size="icon" aria-label="Show and Edit Code" disabled={(!html && !css && !js) && !isLoading /* Allow opening to edit empty if not loading */}>
+                    <Button variant="ghost" size="icon" aria-label="Show and Edit Code" disabled={(!reactCode && !cssCode) && !isLoading /* Allow opening to edit empty if not loading */}>
                       <Code2 className="h-5 w-5" />
                     </Button>
                   </DialogTrigger>
@@ -101,19 +112,18 @@ export function PreviewWindow({
                     <DialogHeader className="pb-2">
                       <DialogTitle>Edit Code</DialogTitle>
                     </DialogHeader>
-                    <Tabs defaultValue="html" className="flex-grow flex flex-col min-h-0">
-                      <TabsList className="grid w-full grid-cols-3">
-                        <TabsTrigger value="html">HTML</TabsTrigger>
+                    <Tabs defaultValue="react" className="flex-grow flex flex-col min-h-0">
+                      <TabsList className="grid w-full grid-cols-2">
+                        <TabsTrigger value="react">React</TabsTrigger>
                         <TabsTrigger value="css">CSS</TabsTrigger>
-                        <TabsTrigger value="js">JavaScript</TabsTrigger>
                       </TabsList>
-                      <TabsContent value="html" className="flex-grow mt-2 h-0">
+                      <TabsContent value="react" className="flex-grow mt-2 h-0">
                         <CodeEditor
-                          id="html-editor-dialog"
-                          label="HTML Code Editor"
-                          value={html}
-                          onChange={setHtml}
-                          placeholder="Enter HTML code here..."
+                          id="react-editor-dialog"
+                          label="React Code Editor"
+                          value={reactCode}
+                          onChange={setReactCode}
+                          placeholder="Enter React component code here..."
                           disabled={isLoading}
                         />
                       </TabsContent>
@@ -121,19 +131,9 @@ export function PreviewWindow({
                          <CodeEditor
                           id="css-editor-dialog"
                           label="CSS Code Editor"
-                          value={css}
-                          onChange={setCss}
+                          value={cssCode}
+                          onChange={setCssCode}
                           placeholder="Enter CSS code here..."
-                          disabled={isLoading}
-                        />
-                      </TabsContent>
-                      <TabsContent value="js" className="flex-grow mt-2 h-0">
-                         <CodeEditor
-                          id="js-editor-dialog"
-                          label="JavaScript Code Editor"
-                          value={js}
-                          onChange={setJs}
-                          placeholder="Enter JavaScript code here..."
                           disabled={isLoading}
                         />
                       </TabsContent>
@@ -143,7 +143,7 @@ export function PreviewWindow({
               </div>
             </CardHeader>
             <CardContent className="flex-grow p-4 pt-0">
-              {html || css || js ? (
+              {reactCode || cssCode ? (
                  <div className="w-full h-full flex items-center justify-center bg-muted/30 rounded-md overflow-auto p-2">
                     <iframe
                       srcDoc={srcDoc}

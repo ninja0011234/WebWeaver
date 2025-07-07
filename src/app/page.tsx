@@ -18,9 +18,8 @@ import { useProjects } from '@/hooks/useProjects';
 
 export default function WebWeaverPage() {
   const [prompt, setPrompt] = useState<string>('');
-  const [htmlCode, setHtmlCode] = useState<string>('');
+  const [reactCode, setReactCode] = useState<string>('');
   const [cssCode, setCssCode] = useState<string>('');
-  const [jsCode, setJsCode] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [hasCode, setHasCode] = useState<boolean>(false);
   const [isPreviewVisible, setIsPreviewVisible] = useState<boolean>(true);
@@ -45,8 +44,8 @@ export default function WebWeaverPage() {
   } = useProjects();
 
   useEffect(() => {
-    setHasCode(htmlCode.trim() !== '' || cssCode.trim() !== '' || jsCode.trim() !== '');
-  }, [htmlCode, cssCode, jsCode]);
+    setHasCode(reactCode.trim() !== '' || cssCode.trim() !== '');
+  }, [reactCode, cssCode]);
 
   useEffect(() => {
     if (canCreateCheckpoint) {
@@ -61,23 +60,9 @@ export default function WebWeaverPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [prompt, lastSuccessfulPrompt, currentProject]);
 
-
-  const parseModifiedCode = (modifiedCode: string): { html: string; css: string; js: string } => {
-    const htmlMatch = modifiedCode.match(/<!-- HTML_CODE_START -->([\s\S]*?)<!-- HTML_CODE_END -->/);
-    const cssMatch = modifiedCode.match(/\/\* CSS_CODE_START \*\/([\s\S]*?)\/\* CSS_CODE_END \*\//);
-    const jsMatch = modifiedCode.match(/\/\/ JAVASCRIPT_CODE_START([\s\S]*?)\/\/ JAVASCRIPT_CODE_END/);
-
-    return {
-      html: htmlMatch ? htmlMatch[1].trim() : '',
-      css: cssMatch ? cssMatch[1].trim() : '',
-      js: jsMatch ? jsMatch[1].trim() : '',
-    };
-  };
-
-  const handleSetCodeStates = (html: string, css: string, js: string, prompt: string) => {
-    setHtmlCode(html);
+  const handleSetCodeStates = (react: string, css: string, prompt: string) => {
+    setReactCode(react);
     setCssCode(css);
-    setJsCode(js);
     setPrompt(prompt);
   };
 
@@ -91,9 +76,8 @@ export default function WebWeaverPage() {
     setCanCreateCheckpoint(false);
     try {
       const result = await generateCodeFromPrompt({ prompt });
-      setHtmlCode(result.html);
+      setReactCode(result.reactComponent);
       setCssCode(result.css);
-      setJsCode(result.javascript);
       setLastSuccessfulPrompt(prompt);
       setCanCreateCheckpoint(true);
       toast({ title: "Code Generated", description: "AI has woven your web! You can now save this as a checkpoint." });
@@ -115,51 +99,19 @@ export default function WebWeaverPage() {
     }
     setIsLoading(true);
     setCanCreateCheckpoint(false);
-    const existingCode = `
-<!-- HTML_CODE_START -->
-${htmlCode}
-<!-- HTML_CODE_END -->
-
-/* CSS_CODE_START */
-${cssCode}
-/* CSS_CODE_END */
-
-// JAVASCRIPT_CODE_START
-${jsCode}
-// JAVASCRIPT_CODE_END
-`;
-    const editPromptContent = `${prompt}
-
-Your response MUST be structured with the following delimiters for each language block:
-<!-- HTML_CODE_START -->
-... html code ...
-<!-- HTML_CODE_END -->
-
-/* CSS_CODE_START */
-... css code ...
-/* CSS_CODE_END */
-
-// JAVASCRIPT_CODE_START
-... javascript code ...
-// JAVASCRIPT_CODE_END
-
-If a section is not present or not modified, include the delimiters with the original content for that section.
-`;
-
+    
     try {
-      const result = await editCodeWithPrompt({ existingCode, prompt: editPromptContent });
-      const { html: newHtml, css: newCss, js: newJs } = parseModifiedCode(result.modifiedCode);
+      const result = await editCodeWithPrompt({ 
+        existingComponent: reactCode, 
+        existingCss: cssCode, 
+        prompt 
+      });
       
-      if (!newHtml && !newCss && !newJs && result.modifiedCode.trim() !== '') {
-         toast({ title: "Parsing Error", description: "AI response format was not as expected. Please try rephrasing your edit.", variant: "destructive" });
-      } else {
-        setHtmlCode(newHtml);
-        setCssCode(newCss);
-        setJsCode(newJs);
-        setLastSuccessfulPrompt(prompt);
-        setCanCreateCheckpoint(true);
-        toast({ title: "Code Edited", description: "AI has rewoven your web! You can now save this as a checkpoint." });
-      }
+      setReactCode(result.modifiedComponent);
+      setCssCode(result.modifiedCss);
+      setLastSuccessfulPrompt(prompt);
+      setCanCreateCheckpoint(true);
+      toast({ title: "Code Edited", description: "AI has rewoven your web! You can now save this as a checkpoint." });
 
     } catch (error) {
       console.error("Error editing code:", error);
@@ -171,13 +123,12 @@ If a section is not present or not modified, include the delimiters with the ori
   const handleDownloadProjectZip = () => {
     const projectToDownload = projects.find(p => p.id === currentProjectId);
     const projectName = projectToDownload?.name || 'web-weaver-export';
-    downloadProjectAsZip(htmlCode, cssCode, jsCode, projectName);
+    downloadProjectAsZip(reactCode, cssCode, projectName);
   };
 
   const handleClearCode = () => {
-    setHtmlCode('');
+    setReactCode('');
     setCssCode('');
-    setJsCode('');
     setPrompt('');
     clearCurrentProjectSelection();
     setCanCreateCheckpoint(false);
@@ -188,15 +139,15 @@ If a section is not present or not modified, include the delimiters with the ori
   const togglePreview = () => setIsPreviewVisible(prev => !prev);
 
   const onSaveOrUpdateProjectHandler = () => {
-    saveOrUpdateProject({ html: htmlCode, css: cssCode, js: jsCode, prompt: prompt });
+    saveOrUpdateProject({ react: reactCode, css: cssCode, prompt: prompt });
   };
 
   const onSaveProjectAsCopyHandler = () => {
-    saveProjectAsCopy({ html: htmlCode, css: cssCode, js: jsCode, prompt: prompt });
+    saveProjectAsCopy({ react: reactCode, css: cssCode, prompt: prompt });
   };
   
   const onSaveCheckpointHandler = () => {
-    saveCheckpoint({ html: htmlCode, css: cssCode, js: jsCode }, lastSuccessfulPrompt);
+    saveCheckpoint({ react: reactCode, css: cssCode }, lastSuccessfulPrompt);
   };
 
   const onDeleteProjectHandler = (projectId: string) => {
@@ -207,10 +158,9 @@ If a section is not present or not modified, include the delimiters with the ori
     renameProject(projectId, newName);
   };
 
-  const handleFileUpload = (content: string, type: 'html' | 'css' | 'js') => {
-    if (type === 'html') setHtmlCode(content);
+  const handleFileUpload = (content: string, type: 'react' | 'css') => {
+    if (type === 'react') setReactCode(content);
     if (type === 'css') setCssCode(content);
-    if (type === 'js') setJsCode(content);
 
     setPrompt(''); 
     clearCurrentProjectSelection();
@@ -248,21 +198,18 @@ If a section is not present or not modified, include the delimiters with the ori
             currentProjectName={currentProject?.name}
             canCreateCheckpoint={canCreateCheckpoint}
             onSaveAsCheckpoint={onSaveCheckpointHandler}
-            onHtmlFileUpload={(content) => handleFileUpload(content, 'html')}
+            onReactFileUpload={(content) => handleFileUpload(content, 'react')}
             onCssFileUpload={(content) => handleFileUpload(content, 'css')}
-            onJsFileUpload={(content) => handleFileUpload(content, 'js')}
           />
         </ResizablePanel>
         <ResizableHandle withHandle className={!isPreviewVisible ? "hidden" : ""} />
         {isPreviewVisible && (
           <ResizablePanel defaultSize={70} minSize={30} className="p-1 sm:p-2">
             <PreviewWindow
-              html={htmlCode}
-              setHtml={setHtmlCode}
-              css={cssCode}
-              setCss={setCssCode}
-              js={jsCode}
-              setJs={setJsCode}
+              reactCode={reactCode}
+              setReactCode={setReactCode}
+              cssCode={cssCode}
+              setCssCode={setCssCode}
               isLoading={isLoading}
               isVisible={isPreviewVisible}
             />

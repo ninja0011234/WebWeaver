@@ -4,21 +4,19 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useToast } from "@/hooks/use-toast";
 
-const LOCAL_STORAGE_KEY = 'webWeaverProjects_v1';
+const LOCAL_STORAGE_KEY = 'webWeaverProjects_v2_react';
 
 export interface Project {
   id: string;
   name: string;
-  html: string;
+  react: string;
   css: string;
-  js: string;
   prompt: string;
 }
 
 interface CodeBundle {
-  html: string;
+  react: string;
   css: string;
-  js: string;
   prompt: string;
 }
 
@@ -28,10 +26,10 @@ interface UseProjectsReturn {
   currentProject: Project | null;
   canCreateCheckpoint: boolean;
   lastSuccessfulPrompt: string;
-  loadProject: (projectId: string, setCodeStates: (html: string, css: string, js: string, prompt: string) => void) => void;
+  loadProject: (projectId: string, setCodeStates: (react: string, css: string, prompt: string) => void) => void;
   saveOrUpdateProject: (currentCode: CodeBundle) => void;
   saveProjectAsCopy: (currentCode: CodeBundle) => void;
-  saveCheckpoint: (currentCode: { html: string; css: string; js: string }, currentPromptForCheckpoint: string) => void;
+  saveCheckpoint: (currentCode: { react: string; css: string; }, currentPromptForCheckpoint: string) => void;
   deleteProject: (projectId: string, onDeletionCallback?: () => void) => void;
   renameProject: (projectId: string, newName: string) => void;
   setCanCreateCheckpoint: (value: boolean) => void;
@@ -68,10 +66,10 @@ export function useProjects(): UseProjectsReturn {
     }
   }, [toast]);
 
-  const loadProject = useCallback((projectId: string, setCodeStates: (html: string, css: string, js: string, prompt: string) => void) => {
+  const loadProject = useCallback((projectId: string, setCodeStates: (react: string, css: string, prompt: string) => void) => {
     const projectToLoad = projects.find(p => p.id === projectId);
     if (projectToLoad) {
-      setCodeStates(projectToLoad.html, projectToLoad.css, projectToLoad.js, projectToLoad.prompt);
+      setCodeStates(projectToLoad.react, projectToLoad.css, projectToLoad.prompt);
       setCurrentProjectId(projectToLoad.id);
       setCanCreateCheckpoint(false); // Cannot make checkpoint immediately after load
       setLastSuccessfulPrompt(projectToLoad.prompt); // For checkpoint consistency
@@ -83,9 +81,8 @@ export function useProjects(): UseProjectsReturn {
     const newProjectData: Project = {
       id: idToUse,
       name: nameToUse,
-      html: currentCode.html,
+      react: currentCode.react,
       css: currentCode.css,
-      js: currentCode.js,
       prompt: currentCode.prompt,
     };
 
@@ -144,7 +141,7 @@ export function useProjects(): UseProjectsReturn {
 
 
   const saveCheckpoint = useCallback((
-    currentCode: { html: string; css: string; js: string },
+    currentCode: { react: string; css: string; },
     currentPromptForCheckpoint: string
   ) => {
     const currentProjectNameBase = currentProjectId ? projects.find(p => p.id === currentProjectId)?.name : 'Untitled Project';
@@ -157,9 +154,8 @@ export function useProjects(): UseProjectsReturn {
       const newCheckpoint: Project = {
         id: Date.now().toString(),
         name: checkpointName.trim(),
-        html: currentCode.html,
+        react: currentCode.react,
         css: currentCode.css,
-        js: currentCode.js,
         prompt: currentPromptForCheckpoint, 
       };
 

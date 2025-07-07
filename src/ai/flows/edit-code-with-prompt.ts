@@ -1,7 +1,7 @@
 // src/ai/flows/edit-code-with-prompt.ts
 'use server';
 /**
- * @fileOverview Edits existing code of a web application based on a text prompt.
+ * @fileOverview Edits an existing React component and its CSS based on a text prompt.
  *
  * - editCodeWithPrompt - A function that takes existing code and a prompt, and returns modified code.
  * - EditCodeWithPromptInput - The input type for the editCodeWithPrompt function.
@@ -12,13 +12,15 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const EditCodeWithPromptInputSchema = z.object({
-  existingCode: z.string().describe('The existing HTML, CSS, and JavaScript code of the web application.'),
+  existingComponent: z.string().describe('The existing React component code (JSX).'),
+  existingCss: z.string().describe('The existing CSS code for the component.'),
   prompt: z.string().describe('A text prompt describing the changes to make to the code.'),
 });
 export type EditCodeWithPromptInput = z.infer<typeof EditCodeWithPromptInputSchema>;
 
 const EditCodeWithPromptOutputSchema = z.object({
-  modifiedCode: z.string().describe('The modified HTML, CSS, and JavaScript code of the web application.'),
+  modifiedComponent: z.string().describe('The modified React component code (JSX).'),
+  modifiedCss: z.string().describe('The modified CSS code.'),
 });
 export type EditCodeWithPromptOutput = z.infer<typeof EditCodeWithPromptOutputSchema>;
 
@@ -30,15 +32,18 @@ const prompt = ai.definePrompt({
   name: 'editCodeWithPromptPrompt',
   input: {schema: EditCodeWithPromptInputSchema},
   output: {schema: EditCodeWithPromptOutputSchema},
-  prompt: `You are a web development expert. You will modify the existing code based on the user's instructions.
+  prompt: `You are a web development expert specializing in React. You will modify the existing React component and CSS based on the user's instructions.
 
-Existing Code:
-{{{existingCode}}}
+Existing React Component:
+{{{existingComponent}}}
+
+Existing CSS:
+{{{existingCss}}}
 
 Instructions:
 {{{prompt}}}
 
-Modified Code:`, 
+Return the complete, modified code for both the React component and the CSS, even if one of them is unchanged.`,
 });
 
 const editCodeWithPromptFlow = ai.defineFlow(
